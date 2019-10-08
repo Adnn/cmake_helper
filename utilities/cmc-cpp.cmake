@@ -1,5 +1,5 @@
 ## \brief Enable all warnings as error for provided TARGET.
-##        Additionally raises the warning level except for MSVC
+##        Additionally raises the warning level except for MSVC.
 function(cmc_cpp_all_warnings_as_errors TARGET)
 
     set(gnuoptions "AppleClang" "Clang" "GNU")

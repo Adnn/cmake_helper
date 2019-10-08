@@ -10,6 +10,7 @@ cloning it in 'cmake/' subfolder:
     cd $PROJECT
     git submodule add ${repo_url} cmake
 
+
 It is then a matter of including the `include.cmake` file at the beginning 
 of downstream's root CMakeLists.txt
 
@@ -18,5 +19,18 @@ of downstream's root CMakeLists.txt
 
     # Include cmake_helper submodule
     include("cmake/include.cmake")
+
+    ...
+
+
+This will initialize cmake helpers, and make functions in `utilities/cmc-base.cmake` available.
+Additional functions defined in other files from `utilities/` are made available
+by including the corresponding file with its basename.
+E.g. to access `cmc_install_with_folders` defined in `utilities/cmc-install.cmake`:
+
+    ...
+
+    include(cmc-install)
+    cmc_install_with_folders(FILES a/a.h b/b.h DESTINATION include/)
 
     ...

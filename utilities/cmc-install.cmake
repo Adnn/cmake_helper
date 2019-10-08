@@ -1,14 +1,22 @@
 ## \brief Installs the provided files (optionally adding the DESTINATION prefix)
-##        while preserving the relative path of each file (i.e. recreating folder hierarchy)
+##        while preserving the relative path of each file (i.e. recreating folder hierarchy).
+##
+## \arg DESTINATION required path that will be prefixed to the provided FILES
+## \arg FILES list of relative paths to files, prepended with DESTINATION when installed
 function(cmc_install_with_folders)
     set(optionsArgs "")
     set(oneValueArgs "DESTINATION")
     set(multiValueArgs "FILES")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
+    if (NOT CAS_DESTINATION)
+        message(AUTHOR_WARNING "DESTINATION value is required, skip installation for FILES")
+        return()
+    endif()
+
     foreach(_file ${CAS_FILES})
         get_filename_component(_dir ${_file} DIRECTORY)
-    install(FILES ${_file} DESTINATION ${CAS_DESTINATION}/${_dir})
+        install(FILES ${_file} DESTINATION ${CAS_DESTINATION}/${_dir})
     endforeach()
 endfunction()
 
@@ -16,38 +24,83 @@ endfunction()
 ## \brief Generate a package config file for TARGET, making it available:
 ##        * (at configure time) in the build tree
 ##        * (at install time) in the install tree
-function(cmc_install_packageconfig TARGET)
+##
+## \arg EXPORTNAME Name of the export set for which targets files are generated.
+## \arg FIND_FILE optional find file templates (see cmc_find_dependencies for syntax), invoked
+##      by the generated Config file for TARGET. Allows finding external dependencies, while
+##      keeping the list of said external dependencies DRY (thanks to the template re-use).
+## \arg DEPENDS_COMPONENTS optional list of internal dependencies (i.e, other targets defined under
+##      the same top level CMake project). Invoked by the generated Config file for TARGET.
+##      Allows to satisfy internal dependencies when the package is found by downstream.
+## \arg NAMESPACE Prepended to all targets written in the export set.
+function(cmc_install_packageconfig TARGET EXPORTNAME)
     set(optionsArgs "")
-    set(oneValueArgs "NAMESPACE")
-    set(multiValueArgs "")
+    set(oneValueArgs "NAMESPACE" "FIND_FILE")
+    set(multiValueArgs "DEPENDS_COMPONENTS")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    install(TARGETS ${TARGET} EXPORT ${TARGET}Targets)
+    # suffixes with **root** project name, to group with root config in case of componentized repo
+    set(_main_config_name ${CMAKE_PROJECT_NAME})
+    set(_install_destination ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${_main_config_name})
 
-    set(_targetfile ${TARGET}Targets.cmake)
+    # If a find file is provided to find upstreams
+    set(_findupstream_file ${TARGET}FindUpstream.cmake)
+    if (CAS_FIND_FILE)
+        # No value for REQUIRED and QUIET substition, to remove them
+        set (find_package "find_dependency")
+        # build tree
+        configure_file(${CAS_FIND_FILE} ${CMAKE_BINARY_DIR}/${_findupstream_file} @ONLY)
+        #install tree
+        install(FILES ${CMAKE_BINARY_DIR}/${_findupstream_file}
+                DESTINATION ${_install_destination})
+    endif()
 
-    # Generate config files in the build tree, from the template in Config.cmake.in
+    # If a list of required internal components is provided
+    if (CAS_DEPENDS_COMPONENTS)
+        list(JOIN CAS_DEPENDS_COMPONENTS " " _joined_components)
+        set(FIND_INTERNAL_COMPONENTS
+            "find_dependency(${_main_config_name} CONFIG COMPONENTS ${_joined_components})")
+    endif()
+
+    set(_targetfile "${EXPORTNAME}.cmake")
+
+    # Generate config files in the build tree
     configure_file(${CMC_ROOT_DIR}/templates/PackageConfig.cmake.in
-                   ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Config.cmake
-                   @ONLY
-    )
+                   ${CMAKE_BINARY_DIR}/${TARGET}Config.cmake
+                   @ONLY)
 
     # Install the config file over to the install tree
     install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Config.cmake
-        DESTINATION lib/cmake/${TARGET}
-    )
+        FILES ${CMAKE_BINARY_DIR}/${TARGET}Config.cmake
+        DESTINATION ${_install_destination})
 
     # build tree
-    export(EXPORT ${TARGET}Targets
+    export(EXPORT ${EXPORTNAME}
         NAMESPACE ${CAS_NAMESPACE}::
-        FILE ${CMAKE_CURRENT_BINARY_DIR}/${_targetfile}
-    )
+        FILE ${CMAKE_BINARY_DIR}/${_targetfile})
 
     # install tree
-    install(EXPORT ${TARGET}Targets
+    install(EXPORT ${EXPORTNAME}
         FILE ${_targetfile}
-        DESTINATION lib/cmake/${TARGET}
-        NAMESPACE ${CAS_NAMESPACE}::
-    )
+        DESTINATION ${_install_destination}
+        NAMESPACE ${CAS_NAMESPACE}::)
+endfunction()
+
+
+## \brief Generate the root package config file for a project providing several components
+##        (typically, a repository containing several libraries).
+##
+## This config file should be found by downstream in its call to find_package(... COMPONENTS ...)
+function(cmc_install_root_component_config)
+    # Ensures the root config is found when looking for the name of the root project
+    set(PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
+
+    # Generate root config files in the build tree
+    configure_file(${CMC_ROOT_DIR}/templates/ComponentPackageRootConfig.cmake.in 
+                   ${CMAKE_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
+                   @ONLY)
+
+    # Install the root config file over to the install tree
+    install(FILES ${CMAKE_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
+            DESTINATION ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${PACKAGE_NAME})
 endfunction()
