@@ -1,4 +1,4 @@
-## \brief Installs the provided files (optionally adding the DESTINATION prefix)
+## \brief Installs the provided files (optionally prepending DESTINATION prefix)
 ##        while preserving the relative path of each file (i.e. recreating folder hierarchy).
 ##
 ## \arg DESTINATION required path that will be prefixed to the provided FILES
@@ -89,20 +89,19 @@ function(cmc_install_packageconfig TARGET EXPORTNAME)
                    @ONLY)
 
     # Install the config file over to the install tree
-    install(
-        FILES ${CMAKE_BINARY_DIR}/${TARGET}Config.cmake
-        DESTINATION ${_install_destination})
+    install(FILES ${CMAKE_BINARY_DIR}/${TARGET}Config.cmake
+            DESTINATION ${_install_destination})
 
     # build tree
     export(EXPORT ${EXPORTNAME}
-        NAMESPACE ${CAS_NAMESPACE}::
-        FILE ${CMAKE_BINARY_DIR}/${_targetfile})
+        FILE ${CMAKE_BINARY_DIR}/${_targetfile}
+        NAMESPACE ${CAS_NAMESPACE})
 
     # install tree
     install(EXPORT ${EXPORTNAME}
         FILE ${_targetfile}
         DESTINATION ${_install_destination}
-        NAMESPACE ${CAS_NAMESPACE}::)
+        NAMESPACE ${CAS_NAMESPACE})
 
     #
     # Optional version logic
@@ -135,7 +134,7 @@ function(cmc_install_root_component_config)
     set(PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
 
     # Generate root config files in the build tree
-    configure_file(${CMC_ROOT_DIR}/templates/ComponentPackageRootConfig.cmake.in 
+    configure_file(${CMC_ROOT_DIR}/templates/ComponentPackageRootConfig.cmake.in
                    ${CMAKE_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
                    @ONLY)
 
