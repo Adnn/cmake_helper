@@ -1,5 +1,5 @@
-# Made a function to avoid leaking the variables defined within conanbuildinfo.cmake
-function(conan_handle_compiler_settings)
+# Cannot be a function: some invoked macro modify global variables
+macro(conan_handle_compiler_settings)
     include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 
     if(CONAN_EXPORTED)
@@ -14,7 +14,7 @@ function(conan_handle_compiler_settings)
     conan_set_std()
     conan_set_libcxx()
     conan_set_vs_runtime()
-endfunction()
+endmacro()
 
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 conan_handle_compiler_settings()
