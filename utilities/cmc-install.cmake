@@ -60,7 +60,8 @@ function(cmc_install_packageconfig TARGET EXPORTNAME)
 
     # suffixes with **root** project name, to group with root config in case of componentized repo
     set(_main_config_name ${CMAKE_PROJECT_NAME})
-    set(_install_destination ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${_main_config_name})
+    set(_install_destination ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${_main_config_name}/${TARGET})
+    set(_buildtree_destination ${CMAKE_BINARY_DIR}/${TARGET})
 
     # If a find file is provided to find upstreams
     set(_findupstream_file ${TARGET}FindUpstream.cmake)
@@ -68,9 +69,9 @@ function(cmc_install_packageconfig TARGET EXPORTNAME)
         # No value for REQUIRED and QUIET substition, to remove them
         set (find_package "find_dependency")
         # build tree
-        configure_file(${CAS_FIND_FILE} ${CMAKE_BINARY_DIR}/${_findupstream_file} @ONLY)
+        configure_file(${CAS_FIND_FILE} ${_buildtree_destination}/${_findupstream_file} @ONLY)
         #install tree
-        install(FILES ${CMAKE_BINARY_DIR}/${_findupstream_file}
+        install(FILES ${_buildtree_destination}/${_findupstream_file}
                 DESTINATION ${_install_destination})
     endif()
 
@@ -85,16 +86,16 @@ function(cmc_install_packageconfig TARGET EXPORTNAME)
 
     # Generate config files in the build tree
     configure_file(${CMC_ROOT_DIR}/templates/PackageConfig.cmake.in
-                   ${CMAKE_BINARY_DIR}/${TARGET}Config.cmake
+                   ${_buildtree_destination}/${TARGET}Config.cmake
                    @ONLY)
 
     # Install the config file over to the install tree
-    install(FILES ${CMAKE_BINARY_DIR}/${TARGET}Config.cmake
+    install(FILES ${_buildtree_destination}/${TARGET}Config.cmake
             DESTINATION ${_install_destination})
 
     # build tree
     export(EXPORT ${EXPORTNAME}
-        FILE ${CMAKE_BINARY_DIR}/${_targetfile}
+        FILE ${_buildtree_destination}/${_targetfile}
         NAMESPACE ${CAS_NAMESPACE})
 
     # install tree

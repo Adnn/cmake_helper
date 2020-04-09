@@ -8,14 +8,14 @@ include(CMakeFindDependencyMacro)
 
 # Note: Execution of this Config script might be recursive via the find_depency call,
 # in cases where components in the same project depend on each other.
-# Since all invocations occur in the same "variable scope", the unset(_config_location) would also 
+# Since all invocations occur in the same "variable scope", the unset(_config_location) would also
 # erase the value in the "calling context", even if unset would occur after the loop completes.
 # For this reason, re-set `_config_location` variable at each iteration.
 foreach(module ${@PACKAGE_NAME@_FIND_COMPONENTS})
-    set (_config_location "${CMAKE_CURRENT_LIST_DIR}")
+    set (_config_location "${CMAKE_CURRENT_LIST_DIR}/${module}")
     # find_dependency should forward the QUIET and REQUIRED arguments
     find_dependency(${module} CONFIG
-                    PATHS "${_config_location}" 
+                    PATHS "${_config_location}"
                     NO_DEFAULT_PATH)
     unset(_config_location)
     if (NOT ${module}_FOUND)
