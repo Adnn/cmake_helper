@@ -23,14 +23,21 @@ endfunction()
 
 ## \brief Internal helper function to generate config check files in both buid and install trees.
 ##
-function(_version_files PACKAGE_NAME INSTALL_DESTINATION VERSION VERSION_COMPATIBILITY)
+## \arg BUILDTREE_DESTINATION Path where the version config file will be created in build tree.
+## \arg INSTALL_DESTINATION Path where the version config file will be installed.
+function(_version_files PACKAGE_NAME BUILDTREE_DESTINATION INSTALL_DESTINATION
+                        VERSION VERSION_COMPATIBILITY ARCH_INDEPENDENT)
+    if (ARCH_INDEPENDENT)
+        set(_ARCH "ARCH_INDEPENDENT")
+    endif()
     # Build tree
     include(CMakePackageConfigHelpers)
-    write_basic_package_version_file(${CMAKE_BINARY_DIR}/${PACKAGE_NAME}ConfigVersion.cmake
+    write_basic_package_version_file(${BUILDTREE_DESTINATION}/${PACKAGE_NAME}ConfigVersion.cmake
                                      VERSION ${VERSION}
-                                     COMPATIBILITY ${VERSION_COMPATIBILITY})
+                                     COMPATIBILITY ${VERSION_COMPATIBILITY}
+                                     ${_ARCH})
     # Install tree
-    install(FILES ${CMAKE_BINARY_DIR}/${PACKAGE_NAME}ConfigVersion.cmake
+    install(FILES ${BUILDTREE_DESTINATION}/${PACKAGE_NAME}ConfigVersion.cmake
             DESTINATION ${INSTALL_DESTINATION})
 endfunction()
 
@@ -46,14 +53,19 @@ endfunction()
 ## \arg VERSION_COMPATIBILITY optional version compatibility mode for the created package.
 ##      Accepted values are the values for COMPATIBILITY of write_basic_package_version_file:
 ##      https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#generating-a-package-version-file
-##      When absent, no version checks are made.
+##      When absent, the package version file will **not** be produced, so no version checks are made.
 ##      When provided, the VERSION property of TARGET will be used as package version.
+## \arg ARCH_INDEPENDENT optional flag, whose presence make the package version compatible accross
+##      different architectures.
+##      see: https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:write_basic_package_version_file
+##      This flag will only have an effect if the version file is produced.
+##      i.e. it should only be provided when VERSION_COMPATIBILITY is also provided.
 ## \arg DEPENDS_COMPONENTS optional list of internal dependencies (i.e, other targets defined under
 ##      the same top level CMake project). Invoked by the generated Config file for TARGET.
 ##      Allows to satisfy internal dependencies when the package is found by downstream.
 ## \arg NAMESPACE Prepended to all targets written in the export set.
 function(cmc_install_packageconfig TARGET EXPORTNAME)
-    set(optionsArgs "")
+    set(optionsArgs "ARCH_INDEPENDENT")
     set(oneValueArgs "NAMESPACE" "FIND_FILE" "VERSION_COMPATIBILITY")
     set(multiValueArgs "DEPENDS_COMPONENTS")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -112,7 +124,8 @@ function(cmc_install_packageconfig TARGET EXPORTNAME)
         if(NOT _version)
             message(SEND_ERROR "VERSION property must be set on target ${TARGET} before setting its VERSION_COMPATIBILITY")
         endif()
-        _version_files(${TARGET} ${_install_destination} ${_version} ${CAS_VERSION_COMPATIBILITY})
+        _version_files(${TARGET} ${_buildtree_destination} ${_install_destination}
+                       ${_version} ${CAS_VERSION_COMPATIBILITY} ${CAS_ARCH_INDEPENDENT})
     endif()
 endfunction()
 
@@ -123,11 +136,17 @@ endfunction()
 ## \arg VERSION_COMPATIBILITY optional version compatibility mode for the created package.
 ##      Accepted values are the values for COMPATIBILITY of write_basic_package_version_file:
 ##      https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#generating-a-package-version-file
-##      When absent, no version checks are made.
+##      When absent, the package version file will **not** be produced, so no version checks are made.
 ##      When provided, CMAKE_PROJECT_VERSION will be used as package version.
+## \arg ARCH_INDEPENDENT optional flag, whose presence make the package version compatible accross
+##      different architectures.
+##      see: https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:write_basic_package_version_file
+##      This flag will only have an effect if the version file is produced.
+##      i.e. it should only be provided when VERSION_COMPATIBILITY is also provided.
 ##
 ## This config file should be found by downstream in its call to find_package(... COMPONENTS ...)
 function(cmc_install_root_component_config)
+    set(optionsArgs "ARCH_INDEPENDENT")
     set(oneValueArgs "VERSION_COMPATIBILITY")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -147,7 +166,11 @@ function(cmc_install_root_component_config)
         if(NOT CMAKE_PROJECT_VERSION)
             message(SEND_ERROR "Top level CMake project must have a version set before setting VERSION_COMPATIBILITY")
         endif()
-        _version_files(${PACKAGE_NAME} ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${PACKAGE_NAME}
-                       ${CMAKE_PROJECT_VERSION} ${CAS_VERSION_COMPATIBILITY})
+        _version_files(${PACKAGE_NAME}
+                       ${CMAKE_BINARY_DIR}
+                       ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${PACKAGE_NAME}
+                       ${CMAKE_PROJECT_VERSION}
+                       ${CAS_VERSION_COMPATIBILITY}
+                       ${CAS_ARCH_INDEPENDENT})
     endif()
 endfunction()
