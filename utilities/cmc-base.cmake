@@ -20,14 +20,14 @@ function(cmc_target_current_include_directory TARGET)
         INTERFACE
             $<BUILD_INTERFACE:${_buildtree_dir}>
             # This target subdir is intended as a separation layer:
-            # Actual headers should be installed in include/${TARGET}/${TARGET} 
+            # Actual headers should be installed in include/${TARGET}/${TARGET}
             # and included as `#include<${TARGET}/yy.h` as to not expose sibling components
             $<INSTALL_INTERFACE:include/${TARGET}>)
 
     # Unless the target is an INTERFACE library, its headers are made accessible to its build tree
     get_target_property(_target_type ${TARGET} TYPE)
     if(NOT _target_type STREQUAL INTERFACE_LIBRARY)
-        target_include_directories(${TARGET} 
+        target_include_directories(${TARGET}
             PRIVATE
                 $<BUILD_INTERFACE:${_buildtree_dir}>)
     endif()
@@ -53,9 +53,10 @@ function(cmc_find_dependencies)
         set(_file "CMakeFinds.cmake.in")
     endif()
 
-    set (REQUIRED "REQUIRED")
-    set (QUIET "QUIET")
-    set (find_package "find_package") # Use the actual find_package function
+    set(REQUIRED "REQUIRED")
+    set(QUIET "QUIET")
+    set(find_package "find_package") # Use the actual find_package function
+    set(find_internal_package "#Internal component: find_package") # Commented for internal components
     configure_file(${_file} CMakeFinds.cmake @ONLY)
     include(${CMAKE_CURRENT_BINARY_DIR}/CMakeFinds.cmake)
 endfunction()

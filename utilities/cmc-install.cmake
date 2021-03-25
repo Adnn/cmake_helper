@@ -60,14 +60,11 @@ endfunction()
 ##      see: https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:write_basic_package_version_file
 ##      This flag will only have an effect if the version file is produced.
 ##      i.e. it should only be provided when VERSION_COMPATIBILITY is also provided.
-## \arg DEPENDS_COMPONENTS optional list of internal dependencies (i.e, other targets defined under
-##      the same top level CMake project). Invoked by the generated Config file for TARGET.
-##      Allows to satisfy internal dependencies when the package is found by downstream.
 ## \arg NAMESPACE Prepended to all targets written in the export set.
 function(cmc_install_packageconfig TARGET EXPORTNAME)
     set(optionsArgs "ARCH_INDEPENDENT")
     set(oneValueArgs "NAMESPACE" "FIND_FILE" "VERSION_COMPATIBILITY")
-    set(multiValueArgs "DEPENDS_COMPONENTS")
+    set(multiValueArgs "")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
     # suffixes with **root** project name, to group with root config in case of componentized repo
@@ -79,19 +76,13 @@ function(cmc_install_packageconfig TARGET EXPORTNAME)
     set(_findupstream_file ${TARGET}FindUpstream.cmake)
     if (CAS_FIND_FILE)
         # No value for REQUIRED and QUIET substition, to remove them
-        set (find_package "find_dependency")
+        set(find_package "find_dependency")
+        set(find_internal_package "find_dependency")
         # build tree
         configure_file(${CAS_FIND_FILE} ${_buildtree_destination}/${_findupstream_file} @ONLY)
         #install tree
         install(FILES ${_buildtree_destination}/${_findupstream_file}
                 DESTINATION ${_install_destination})
-    endif()
-
-    # If a list of required internal components is provided
-    if (CAS_DEPENDS_COMPONENTS)
-        list(JOIN CAS_DEPENDS_COMPONENTS " " _joined_components)
-        set(FIND_INTERNAL_COMPONENTS
-            "find_dependency(${_main_config_name} CONFIG COMPONENTS ${_joined_components})")
     endif()
 
     set(_targetfile "${EXPORTNAME}.cmake")
