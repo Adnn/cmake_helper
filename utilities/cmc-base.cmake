@@ -1,3 +1,23 @@
+# \brief Include the configuration file ouptut by conanfile's generate(), if any.
+#
+# \arg FILENAME optional filename of the conan generated cmake config file.
+#               Defaults to 'conanuser_config.cmake'.
+macro(cmc_include_conan_configuration)
+    set(optionsArgs "")
+    set(oneValueArgs "FILENAME")
+    set(multiValueArgs "")
+    cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    set(_filename "${CAS_FILENAME}")
+    if (NOT _filename)
+        set(_filename "conanuser_config.cmake")
+    endif()
+
+    message(STATUS ${PROJECT_BINARY_DIR}/${_filename})
+    include(${PROJECT_BINARY_DIR}/${_filename} OPTIONAL)
+endmacro()
+
+
 ## \brief Configures TARGET so downstream and itself can find its headers with #include<> syntax.
 ##
 ## Allows downstream to include <${TARGET}/[xx/]yy.h> from both build and install trees.
