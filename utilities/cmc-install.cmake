@@ -46,7 +46,9 @@ endfunction()
 ##        * (at configure time) in the build tree
 ##        * (at install time) in the install tree
 ##
+## \arg TARGET Name of the target that will become a component of the package.
 ## \arg EXPORTNAME Name of the export set for which targets files are generated.
+## \arg PACKAGE_NAME Name of the package of which TARGET is made a component.
 ## \arg FIND_FILE optional find file templates (see cmc_find_dependencies for syntax), invoked
 ##      by the generated Config file for TARGET. Allows finding external dependencies, while
 ##      keeping the list of said external dependencies DRY (thanks to the template re-use).
@@ -61,16 +63,17 @@ endfunction()
 ##      This flag will only have an effect if the version file is produced.
 ##      i.e. it should only be provided when VERSION_COMPATIBILITY is also provided.
 ## \arg NAMESPACE Prepended to all targets written in the export set.
-function(cmc_install_packageconfig TARGET EXPORTNAME)
+function(cmc_install_packageconfig TARGET EXPORTNAME PACKAGE_NAME)
     set(optionsArgs "ARCH_INDEPENDENT")
     set(oneValueArgs "NAMESPACE" "FIND_FILE" "VERSION_COMPATIBILITY")
     set(multiValueArgs "")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    # suffixes with **root** project name, to group with root config in case of componentized repo
-    set(_main_config_name ${CMAKE_PROJECT_NAME})
-    set(_install_destination ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${_main_config_name}/${TARGET})
-    set(_buildtree_destination ${CMAKE_BINARY_DIR}/${TARGET})
+    set(_install_destination ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${PACKAGE_NAME}/${TARGET})
+    # Note: using PROJECT_BINARY_DIR relies on the convention that the targets
+    # become components for the repository's only project (in the repositoryes root CMakeLists).
+    # It will not necessarily be the top-level project of the build tree (e.g. Conan Workspaces).
+    set(_buildtree_destination ${PROJECT_BINARY_DIR}/${TARGET})
 
     # If a find file is provided to find upstreams
     set(_findupstream_file ${TARGET}FindUpstream.cmake)
@@ -124,6 +127,7 @@ endfunction()
 ## \brief Generate the root package config file for a project providing several components
 ##        (typically, a repository containing several libraries).
 ##
+## \arg PACKAGE_NAME the name of the created package.
 ## \arg VERSION_COMPATIBILITY optional version compatibility mode for the created package.
 ##      Accepted values are the values for COMPATIBILITY of write_basic_package_version_file:
 ##      https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#generating-a-package-version-file
@@ -135,22 +139,20 @@ endfunction()
 ##      This flag will only have an effect if the version file is produced.
 ##      i.e. it should only be provided when VERSION_COMPATIBILITY is also provided.
 ##
-## This config file should be found by downstream in its call to find_package(... COMPONENTS ...)
-function(cmc_install_root_component_config)
+## This config file should be found by downstream in its call to
+## find_package(${PACKAGE_NAME} COMPONENTS ...).
+function(cmc_install_root_component_config PACKAGE_NAME)
     set(optionsArgs "ARCH_INDEPENDENT")
     set(oneValueArgs "VERSION_COMPATIBILITY")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    # Ensures the root config is found when looking for the name of the root project
-    set(PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
-
     # Generate root config files in the build tree
     configure_file(${CMC_ROOT_DIR}/templates/ComponentPackageRootConfig.cmake.in
-                   ${CMAKE_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
+                   ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
                    @ONLY)
 
     # Install the root config file over to the install tree
-    install(FILES ${CMAKE_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
             DESTINATION ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${PACKAGE_NAME})
 
     if (CAS_VERSION_COMPATIBILITY)
@@ -158,10 +160,30 @@ function(cmc_install_root_component_config)
             message(SEND_ERROR "Top level CMake project must have a version set before setting VERSION_COMPATIBILITY")
         endif()
         _version_files(${PACKAGE_NAME}
-                       ${CMAKE_BINARY_DIR}
+                       ${CMAKE_CURRENT_BINARY_DIR}
                        ${CMC_INSTALL_CONFIGPACKAGE_PREFIX}/${PACKAGE_NAME}
                        ${CMAKE_PROJECT_VERSION}
                        ${CAS_VERSION_COMPATIBILITY}
                        ${CAS_ARCH_INDEPENDENT})
     endif()
+endfunction()
+
+
+## \brief Disables any attempt to find PACKAGE_NAME package via find_package() calls.
+## Relies on the CONFIG mode.
+##
+## \arg PACKAGE_NAME the name of the CMake package to disable.
+##
+## This is usefull to allow downstreams to treat all dependencies the same:
+## locate them with find_package(), then use them via target_link_libraries().
+## It should not matter whether the dependencies is part of the current build tree
+## or not. (This allows advanced generic usages, such as Conan Workspaces.).
+## General discussion: https://gitlab.kitware.com/cmake/cmake/-/issues/17735#note_487572
+##
+## The name was chosen following Daniel Pfeifer note.
+## see: https://gitlab.kitware.com/cmake/cmake/-/issues/17735#note_487572
+function(cmc_register_source_package PACKAGE_NAME)
+  file(WRITE "${CMAKE_BINARY_DIR}/__pkg/${PACKAGE_NAME}/${PACKAGE_NAME}Config.cmake"
+       "message(VERBOSE \"find_package(${PACKAGE_NAME}) disabled: package targets are directly available in the build tree.\")")
+  set(${PACKAGE_NAME}_DIR ${CMAKE_BINARY_DIR}/__pkg/${PACKAGE_NAME} CACHE PATH "")
 endfunction()
