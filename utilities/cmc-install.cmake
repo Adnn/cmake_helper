@@ -80,7 +80,6 @@ function(cmc_install_packageconfig TARGET EXPORTNAME PACKAGE_NAME)
     if (CAS_FIND_FILE)
         # No value for REQUIRED and QUIET substition, to remove them
         set(find_package "find_dependency")
-        set(find_internal_package "find_dependency")
         # build tree
         configure_file(${CAS_FIND_FILE} ${_buildtree_destination}/${_findupstream_file} @ONLY)
         #install tree

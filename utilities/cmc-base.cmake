@@ -76,7 +76,6 @@ function(cmc_find_dependencies)
     set(REQUIRED "REQUIRED")
     set(QUIET "QUIET")
     set(find_package "find_package") # Use the actual find_package function
-    set(find_internal_package "#Internal component: find_package") # Commented for internal components
     configure_file(${_file} CMakeFinds.cmake @ONLY)
     include(${CMAKE_CURRENT_BINARY_DIR}/CMakeFinds.cmake)
 endfunction()
