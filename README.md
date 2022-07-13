@@ -14,7 +14,7 @@ cloning it in 'cmake/' subfolder:
 It is then a matter of including the `include.cmake` file at the beginning
 of downstream's root CMakeLists.txt
 
-    cmake_minimum_required(VERSION 3.12)
+    cmake_minimum_required(VERSION 3.20)
     project(Downstream)
 
     # Include cmake_helper submodule

@@ -35,6 +35,8 @@ function(cmc_target_current_include_directory TARGET)
     if (NOT _buildtree_dir)
         set(_buildtree_dir "${CMAKE_CURRENT_SOURCE_DIR}/..")
     endif()
+    # Normalize the path
+    cmake_path(NORMAL_PATH _buildtree_dir)
 
     target_include_directories(${TARGET}
         INTERFACE
