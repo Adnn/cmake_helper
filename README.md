@@ -8,10 +8,10 @@ This project should be added as a submodule to downstream project repository,
 cloning it in 'cmake/' subfolder:
 
     cd $PROJECT
-    git submodule add ${repo_url} cmake
+    git submodule add https://github.com/Adnn/cmake_helper.git cmake
 
 
-It is then a matter of including the `include.cmake` file at the beginning 
+It is then a matter of including the `include.cmake` file at the beginning
 of downstream's root CMakeLists.txt
 
     cmake_minimum_required(VERSION 3.12)
