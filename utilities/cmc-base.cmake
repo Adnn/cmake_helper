@@ -10,10 +10,9 @@ macro(cmc_include_conan_configuration)
 
     set(_filename "${CAS_FILENAME}")
     if (NOT _filename)
-        set(_filename "conanuser_config.cmake")
+        set(_filename "generators/conanuser_config.cmake")
     endif()
 
-    message(STATUS ${PROJECT_BINARY_DIR}/${_filename})
     include(${PROJECT_BINARY_DIR}/${_filename} OPTIONAL)
 endmacro()
 
