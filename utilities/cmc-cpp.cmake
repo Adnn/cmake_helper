@@ -15,12 +15,17 @@ function(cmc_cpp_all_warnings_as_errors TARGET)
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             set(option "-WX")
             target_compile_options(${TARGET} PRIVATE "-W3")
+            # Disable specific warnings
+            # ASAN enabled without debug information emission. Enable debug info for better ASAN error reporting
+            target_compile_options(${TARGET} PRIVATE "/wd5072")
+            # ASAN recommendation to use /DEBUG
+            target_link_options(${TARGET} PRIVATE "/ignore:4302")
         endif()
 
         # The option is given as both compile option and link option
         # Note:: target_link_options is only available from 3.13
         target_compile_options(${TARGET} PRIVATE ${option})
-        target_link_libraries(${TARGET} PRIVATE ${option})
+        target_link_options(${TARGET} PRIVATE ${option})
     endif()
 
 endfunction()
@@ -45,7 +50,9 @@ function(cmc_cpp_sanitizer TARGET TYPE)
             target_link_options(${TARGET_NAME} PRIVATE /fsanitize=address)
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             target_compile_options(${TARGET_NAME} PRIVATE /fsanitize=address)
-            target_link_options(${TARGET_NAME} PRIVATE /fsanitize=address)
+            target_link_options(${TARGET_NAME} PRIVATE /INCREMENTAL:NO)
+            # Apparently not recognized by MSVC linker, leading to a warning
+            #target_link_options(${TARGET_NAME} PRIVATE /fsanitize=address)
         endif()
     else()
         message(SEND_ERROR "Sanitizer type '${TYPE}' not supported. Aborting.")
