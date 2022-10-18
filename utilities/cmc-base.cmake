@@ -24,9 +24,10 @@ endmacro()
 ##
 ## \arg BUILDTREE_DIRECTORY optional path set as the include directory for the build tree,
 ##                          defaults to the parent of the current source dir.
+## \arg ADD_BINARY_DIR optional if specified, add the current binary dir with provided visibility.
 function(cmc_target_current_include_directory TARGET)
     set(optionsArgs "")
-    set(oneValueArgs "BUILDTREE_DIRECTORY")
+    set(oneValueArgs "BUILDTREE_DIRECTORY;ADD_BINARY_DIR")
     set(multiValueArgs "")
     cmake_parse_arguments(CAS "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -52,6 +53,11 @@ function(cmc_target_current_include_directory TARGET)
             PRIVATE
                 $<BUILD_INTERFACE:${_buildtree_dir}>)
     endif()
+
+    # Add the current binary dir if the option is specified
+    target_include_directories(${TARGET}
+        ${CAS_ADD_BINARY_DIR}
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 endfunction()
 
 
