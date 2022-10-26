@@ -14,6 +14,10 @@ macro(cmc_include_conan_configuration)
     endif()
 
     include(${PROJECT_BINARY_DIR}/${_filename} OPTIONAL)
+    ## MultiConfigGenerator (like MSVC) do not create a build_type subfolder
+    ## SingleConfigGenerator (like Clang) create a build_type subfolder
+    ## thus their binary folder do not contain the generators folder it is in their parent folder
+    include(${PROJECT_BINARY_DIR}/../${_filename} OPTIONAL)
 endmacro()
 
 
