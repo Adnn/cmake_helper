@@ -59,9 +59,11 @@ function(cmc_target_current_include_directory TARGET)
     endif()
 
     # Add the current binary dir if the option is specified
-    target_include_directories(${TARGET}
-        ${CAS_ADD_BINARY_DIR}
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+    if (CAS_ADD_BINARY_DIR)
+        target_include_directories(${TARGET}
+            ${CAS_ADD_BINARY_DIR}
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+    endif()
 endfunction()
 
 
